@@ -1,0 +1,552 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", Consolas, monospace;
+  --color-accent: var(--accent);
+  --color-window: var(--window);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
+  --color-control: var(--control);
+}
+
+/* macOS semantic colors: window chrome is translucent (vibrancy), content panes are opaque. */
+:root {
+  --accent: #007aff;
+  --window: rgb(236 236 236 / 0.8);
+  --window-solid: #ececec;
+  --surface: #ffffff;
+  --fg: rgb(0 0 0 / 0.85);
+  --muted: rgb(0 0 0 / 0.5);
+  --line: rgb(0 0 0 / 0.1);
+  --hover: rgb(0 0 0 / 0.05);
+  --selected: rgb(0 0 0 / 0.09);
+  --control: #ffffff;
+  --control-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.14), 0 0.5px 1.5px rgb(0 0 0 / 0.14);
+  --highlight: rgb(255 255 255 / 0.6);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Liquid Glass: a clear tint, a specular rim lit from the top-left and bottom-right, and a soft lift. */
+  --glass-clear: rgb(255 255 255 / 0.22);
+  --glass-thick: rgb(250 250 252 / 0.62);
+  --glass-regular: rgb(246 248 252 / 0.48);
+  --rim-light: rgb(255 255 255 / 0.95);
+  --rim-soft: rgb(255 255 255 / 0.55);
+  --rim-edge: rgb(255 255 255 / 0.35);
+  --glass-glow: rgb(255 255 255 / 0.45);
+  --glass-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 8px 28px rgb(0 0 0 / 0.14);
+  --sidebar: rgb(248 248 251 / 0.55);
+  color-scheme: light;
+}
+
+:root.dark {
+  --window: rgb(40 40 42 / 0.8);
+  --window-solid: #2a2a2c;
+  --surface: #1e1e1e;
+  --fg: rgb(255 255 255 / 0.88);
+  --muted: rgb(255 255 255 / 0.55);
+  --line: rgb(255 255 255 / 0.1);
+  --hover: rgb(255 255 255 / 0.07);
+  --selected: rgb(255 255 255 / 0.11);
+  --control: rgb(255 255 255 / 0.14);
+  --control-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.4), 0 1px 1.5px rgb(0 0 0 / 0.2);
+  --highlight: rgb(255 255 255 / 0.12);
+  --glass-clear: rgb(40 40 44 / 0.28);
+  --glass-thick: rgb(38 38 42 / 0.62);
+  --glass-regular: rgb(30 32 38 / 0.45);
+  --rim-light: rgb(255 255 255 / 0.32);
+  --rim-soft: rgb(255 255 255 / 0.16);
+  --rim-edge: rgb(255 255 255 / 0.1);
+  --glass-glow: rgb(255 255 255 / 0.08);
+  --glass-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 8px 28px rgb(0 0 0 / 0.36);
+  --sidebar: rgb(44 44 50 / 0.5);
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: -0.006em;
+  color: var(--fg);
+  background: #000;
+  cursor: default;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+}
+
+button {
+  cursor: default;
+}
+
+/* ---------- Materials ---------- */
+
+/*
+ * Liquid Glass. The specular rim is drawn with offset inset shadows (bright along the top-left, softer
+ * along the bottom-right) so it follows any border-radius without a pseudo-element; callers keep
+ * ::before/::after and their own `position`. Callers tune it with --tint (clear vs thick) and --blur.
+ */
+@utility glass {
+  background-color: var(--tint, var(--glass-clear));
+  -webkit-backdrop-filter: blur(var(--blur, 14px)) saturate(190%) brightness(1.04);
+  /* --refract is the lens filter (main.tsx sets it only where backdrop-filter accepts url()).
+     It comes last because Chromium treats the prefixed property as an alias. */
+  backdrop-filter: var(--refract,) blur(var(--blur, 14px)) saturate(190%) brightness(1.04);
+  box-shadow:
+    inset 0 0 0 0.5px var(--rim-edge),
+    inset 1.5px 1.5px 0 -0.5px var(--rim-light),
+    inset -1px -1px 0 -0.5px var(--rim-soft),
+    inset 0 1px 12px -4px var(--glass-glow),
+    var(--glass-shadow);
+}
+
+/* Frosted variant for panels that carry text: menus, sheets, Spotlight, notifications. */
+@utility glass-thick {
+  @apply glass;
+  --tint: var(--glass-thick);
+  --blur: 36px;
+  /* Bending is lost under heavy blur and only costs GPU time. */
+  --refract: ;
+}
+
+/*
+ * Glass laid on glass or on an opaque surface (Control Center modules): same tint, rim and
+ * glow, but no backdrop sampling. Nested lenses smear at the edges and the parent already frosts.
+ */
+@utility glass-flat {
+  @apply glass;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  --glass-shadow: 0 0 #0000;
+}
+
+/* Unified title bar + toolbar height; windows marked `unified` put their own toolbar here. */
+@utility toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  flex-shrink: 0;
+  padding-inline: 12px;
+}
+
+/* ---------- Windows ---------- */
+
+/* Tahoe rounds windows with a toolbar far more than plain title-bar windows. */
+.window {
+  @apply relative flex flex-col size-full overflow-hidden rounded-[16px] text-fg;
+  background: var(--window);
+  backdrop-filter: blur(50px) saturate(190%);
+  -webkit-backdrop-filter: blur(50px) saturate(190%);
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.22),
+    0 6px 16px rgb(0 0 0 / 0.14);
+  transition: box-shadow 0.25s var(--ease);
+}
+/* The inner hairline is drawn above the content so it stays crisp whether the window is opaque or see-through. */
+.window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 0.5px var(--highlight);
+  pointer-events: none;
+}
+.window[data-active="true"] {
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.28),
+    0 24px 64px 6px rgb(0 0 0 / 0.36);
+}
+.window[data-unified="true"] {
+  border-radius: 26px;
+}
+/* Inactive windows lose vibrancy, like macOS. */
+.window:not([data-active="true"]) {
+  background: var(--window-solid);
+  backdrop-filter: none;
+}
+
+/*
+ * Windows with a sidebar (Finder, Settings, Notes) work as in Tahoe: the content is opaque and the sidebar is real
+ * glass over whatever lies behind the window. A backdrop-filter on the window would make it the sidebar's backdrop
+ * root, so the window stays see-through and the sidebar paints the opaque margin around itself instead.
+ */
+.window:has(.sidebar) {
+  background: transparent;
+  backdrop-filter: none;
+}
+.sidebar {
+  @apply glass;
+  position: relative;
+  --tint: var(--sidebar);
+  --blur: 40px;
+  /* A lens this large pulls sharp detail in from outside its edge; the frost alone reads better. */
+  --refract: ;
+  /* The 8px spread fills the margin up to the window edge; 18px + 8px matches the window's 26px corners. */
+  --glass-shadow: 0 1px 6px rgb(0 0 0 / 0.08), 0 0 0 8px var(--surface);
+}
+/*
+ * Where the sidebar meets the content there is no window corner, so the spread's rounded outer corners leave
+ * two slivers. These concave fillers close them: each is centred on the sidebar's corner arc and is clear inside
+ * the spread radius, overlapping it by a pixel so no anti-aliased seam shows.
+ */
+.sidebar::before,
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: calc(100% - 18px);
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+.sidebar::before {
+  top: -8px;
+  background: radial-gradient(circle at 0 100%, transparent 25px, var(--surface) 25.5px);
+}
+.sidebar::after {
+  bottom: -8px;
+  background: radial-gradient(circle at 0 0, transparent 25px, var(--surface) 25.5px);
+}
+
+.light {
+  @apply grid place-items-center size-[13px] rounded-full;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.14);
+}
+.light svg {
+  @apply size-2 opacity-0;
+  stroke-width: 3.25;
+  color: rgb(0 0 0 / 0.55);
+}
+.traffic:hover .light svg {
+  opacity: 1;
+}
+.window:not([data-active="true"]) .traffic:not(:hover) .light {
+  background: var(--line);
+  box-shadow: inset 0 0 0 0.5px var(--line);
+}
+
+/* Camera housing of notched MacBooks: a black tab with concave fillets where it meets the top edge. */
+.notch::before,
+.notch::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+}
+.notch::before {
+  right: 100%;
+  background: radial-gradient(circle at 0 100%, transparent 9.5px, #000 10px);
+}
+.notch::after {
+  left: 100%;
+  background: radial-gradient(circle at 100% 100%, transparent 9.5px, #000 10px);
+}
+
+/* iframes (Safari) would swallow pointer events mid-drag and make windows stick. */
+body.dragging iframe {
+  pointer-events: none;
+}
+
+/* ---------- Menus ---------- */
+
+.menu-panel {
+  @apply glass-thick rounded-[14px] p-[5px] outline-none min-w-56 text-[13px] text-fg;
+}
+.menu-item {
+  @apply flex h-6 items-center gap-1.5 rounded-[9px] px-2;
+}
+.menu-item[data-active="true"] {
+  background: var(--accent);
+  color: white;
+}
+.menu-item[aria-disabled="true"] {
+  opacity: 0.35;
+}
+
+/* ---------- Icons ---------- */
+
+.app-icon {
+  @apply relative grid place-items-center size-full overflow-hidden rounded-[22.5%];
+  box-shadow:
+    0 0.5px 1px rgb(0 0 0 / 0.25),
+    0 3px 8px rgb(0 0 0 / 0.18);
+}
+/* Tahoe icons are glass slabs: a soft top sheen plus a specular rim brightest at opposite corners. */
+.app-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0) 55%);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.2),
+    inset 0 -1px 2px rgb(0 0 0 / 0.1);
+}
+.app-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.15) 35% 65%, rgb(255 255 255 / 0.6));
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ---------- Controls ---------- */
+
+/* Tahoe push buttons are capsules. */
+.btn {
+  @apply inline-flex h-6 items-center justify-center rounded-full px-3.5 text-[13px] bg-control active:brightness-95 disabled:opacity-40;
+  box-shadow: var(--control-shadow);
+}
+.btn-primary {
+  @apply inline-flex h-6 items-center justify-center rounded-full px-3.5 text-[13px] text-white active:brightness-95 disabled:opacity-40;
+  background: var(--accent);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.3),
+    inset 0 -1px 1px rgb(0 0 0 / 0.1),
+    0 1px 2px rgb(0 0 0 / 0.18);
+}
+/* Combine with .btn-primary: re-points the accent at system red. */
+.btn-danger {
+  --accent: #ff3b30;
+}
+
+.field {
+  @apply h-[22px] rounded-[6px] px-2 bg-surface outline-none;
+  box-shadow:
+    inset 0 0.5px 1px rgb(0 0 0 / 0.08),
+    0 0 0 0.5px var(--line);
+  transition: box-shadow 0.15s;
+}
+.field:focus {
+  box-shadow:
+    0 0 0 0.5px var(--accent),
+    0 0 0 3.5px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Rounded gray search field used in toolbars and sidebars. */
+.search-field {
+  @apply flex h-7 items-center gap-1.5 rounded-full bg-hover px-2.5 text-muted;
+}
+.search-field input {
+  @apply w-full bg-transparent text-fg outline-none placeholder:text-muted;
+}
+.search-field:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Borderless toolbar glyph button. */
+.tool {
+  @apply grid h-7 min-w-7 place-items-center rounded-[6px] px-1 text-muted hover:bg-hover hover:text-fg active:bg-selected disabled:opacity-30 disabled:hover:bg-transparent [&_svg]:size-[17px] [&_svg]:[stroke-width:1.75];
+}
+
+/*
+ * Tahoe toolbar items float as glass capsules over the content. A .pill groups related items into one
+ * capsule; the search field and segmented control join the same material. Declared after .tool so it wins.
+ */
+.toolbar .tool,
+.toolbar .pill,
+.toolbar .search-field,
+.toolbar .segmented {
+  @apply glass h-8 min-w-8 rounded-full text-fg;
+}
+.toolbar .tool {
+  @apply px-2;
+}
+.toolbar .pill {
+  @apply flex items-center;
+}
+.toolbar .pill .tool {
+  @apply h-full min-w-9 bg-transparent shadow-none;
+  backdrop-filter: none;
+}
+.toolbar .tool:hover {
+  background-color: var(--hover);
+}
+
+/* Pop-up button: native select with a double chevron. */
+.popup {
+  @apply h-[22px] appearance-none rounded-[6px] bg-control pr-6 pl-2 text-[13px] outline-none;
+  box-shadow: var(--control-shadow);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1 4.5 4 1.5l3 3M1 7.5l3 3 3-3' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+}
+
+/* Tahoe switch: a longer track with a capsule knob that swells into glass while pressed. */
+.switch {
+  @apply relative h-[22px] w-10 shrink-0 appearance-none rounded-full bg-black/10 transition-colors dark:bg-white/15;
+  box-shadow: inset 0 0.5px 1.5px rgb(0 0 0 / 0.12);
+}
+.switch::before {
+  content: "";
+  @apply absolute top-0.5 left-0.5 h-[18px] w-6 rounded-full bg-white;
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.04),
+    0 1.5px 4px rgb(0 0 0 / 0.22);
+  transition:
+    transform 0.3s var(--ease),
+    scale 0.2s var(--ease);
+}
+.switch:active::before {
+  scale: 1.15;
+}
+.switch:checked {
+  background: var(--accent);
+}
+.switch:checked::before {
+  transform: translateX(12px);
+}
+
+/* Range input with an accent fill; --fill is set from React (see ui/Slider). */
+.slider {
+  @apply h-4 appearance-none bg-transparent;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--line) var(--fill));
+}
+/* Capsule knob, as in Tahoe; its width must match the thumb size in ui/Slider. */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: white;
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.1),
+    0 1.5px 4px rgb(0 0 0 / 0.25);
+  transition: scale 0.2s var(--ease);
+}
+.slider:active::-webkit-slider-thumb {
+  scale: 1.2;
+}
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+}
+.slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.slider::-moz-range-thumb {
+  width: 22px;
+  height: 14px;
+  border: none;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+/* Thick Control Center slider: white fill with the glyph drawn on top by the caller. */
+.slider-lg {
+  @apply h-6 w-full appearance-none bg-transparent;
+}
+.slider-lg::-webkit-slider-runnable-track {
+  height: 24px;
+  border-radius: 12px;
+  background: linear-gradient(to right, white var(--fill), rgb(0 0 0 / 0.12) var(--fill));
+}
+.dark .slider-lg::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, white var(--fill), rgb(255 255 255 / 0.14) var(--fill));
+}
+.slider-lg::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.15),
+    0 1px 4px rgb(0 0 0 / 0.25);
+}
+.slider-lg::-moz-range-track {
+  height: 24px;
+  border-radius: 12px;
+  background: rgb(127 127 127 / 0.2);
+}
+.slider-lg::-moz-range-progress {
+  height: 24px;
+  border-radius: 12px;
+  background: white;
+}
+.slider-lg::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+}
+
+input[type="checkbox"]:not(.switch),
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+/* Inset grouped list, as in System Settings. */
+.group-box {
+  @apply rounded-[14px] bg-black/[0.03] dark:bg-white/[0.04];
+  box-shadow: inset 0 0 0 0.5px var(--line);
+}
+.group-row {
+  @apply flex min-h-11 items-center justify-between gap-4 px-3 py-2;
+}
+.group-row + .group-row {
+  box-shadow: 0 -0.5px 0 var(--line);
+}
+
+/* ---------- Scrollbars ---------- */
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(127 127 127 / 0.45);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must override every component animation */
+@media (prefers-reduced-motion) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: end of reduced-motion block */

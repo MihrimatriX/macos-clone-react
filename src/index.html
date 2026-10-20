@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231c1c1e'/%3E%3Cpath transform='translate(4 3)' fill='white' d='M12 7.3c-1.3-1-2.7-1.4-4-1.2C5.3 6.5 3.6 9 3.8 12.4c.2 3.6 2.4 8.1 5 8.5.9.1 1.6-.3 2.2-.5.6-.2 1.4-.2 2 0 .6.2 1.3.6 2.2.5 2.6-.4 4.8-4.9 5-8.5.2-3.4-1.5-5.9-4.2-6.3-1.3-.2-2.7.2-4 1.2zM12.5 5.7c.1-2 1.4-3.5 3.5-3.9-.1 2-1.4 3.6-3.5 3.9z'/%3E%3C/svg%3E" />
+    <!-- Inter stands in for the system font where SF is unavailable (Windows, Linux). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
+    <title>macOS Web — a Liquid Glass desktop in your browser</title>
+    <meta name="description" content="A macOS Tahoe style desktop that runs in the browser: Liquid Glass windows, Dock, Finder, Terminal, Safari, Notes, Music and more. Built with Bun, React and Tailwind." />
+    <meta name="theme-color" content="#1c1c2e" />
+    <!-- Social previews. The image path is relative; scrapers that need an absolute URL get it once a domain is set. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="macOS Web" />
+    <meta property="og:title" content="macOS Web — a Liquid Glass desktop in your browser" />
+    <meta property="og:description" content="Windows, Dock, Finder, Terminal, Safari and more, in the macOS Tahoe Liquid Glass style. Runs entirely in the browser." />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1600" />
+    <meta property="og:image:height" content="1000" />
+    <meta property="og:image:alt" content="A macOS-style desktop with Finder, the Dock and Control Center in Liquid Glass" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <noscript>macOS Web is an interactive desktop that needs JavaScript.</noscript>
+    <div id="root"></div>
+    <!--
+      Liquid Glass lens. The map is neutral grey (no shift) in the middle and ramps red/green toward the
+      edges, so the backdrop is pulled inward only near the rim. It stretches to each element's box.
+    -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="liquid" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feImage
+          preserveAspectRatio="none"
+          result="map"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3ClinearGradient id='x'%3E%3Cstop offset='0' stop-color='%23ff0000'/%3E%3Cstop offset='0.05' stop-color='%23d10000'/%3E%3Cstop offset='0.1' stop-color='%23ae0000'/%3E%3Cstop offset='0.15' stop-color='%23940000'/%3E%3Cstop offset='0.2' stop-color='%23850000'/%3E%3Cstop offset='0.25' stop-color='%23800000'/%3E%3Cstop offset='0.75' stop-color='%23800000'/%3E%3Cstop offset='0.8' stop-color='%237b0000'/%3E%3Cstop offset='0.85' stop-color='%236c0000'/%3E%3Cstop offset='0.9' stop-color='%23520000'/%3E%3Cstop offset='0.95' stop-color='%232f0000'/%3E%3Cstop offset='1' stop-color='%23010000'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2300ff00'/%3E%3Cstop offset='0.05' stop-color='%2300d100'/%3E%3Cstop offset='0.1' stop-color='%2300ae00'/%3E%3Cstop offset='0.15' stop-color='%23009400'/%3E%3Cstop offset='0.2' stop-color='%23008500'/%3E%3Cstop offset='0.25' stop-color='%23008000'/%3E%3Cstop offset='0.75' stop-color='%23008000'/%3E%3Cstop offset='0.8' stop-color='%23007b00'/%3E%3Cstop offset='0.85' stop-color='%23006c00'/%3E%3Cstop offset='0.9' stop-color='%23005200'/%3E%3Cstop offset='0.95' stop-color='%23002f00'/%3E%3Cstop offset='1' stop-color='%23000100'/%3E%3C/linearGradient%3E%3Crect width='100' height='100' fill='url(%23x)'/%3E%3Crect width='100' height='100' fill='url(%23y)' style='mix-blend-mode:screen'/%3E%3C/svg%3E"
+        />
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="40" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

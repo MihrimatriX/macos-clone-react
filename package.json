@@ -1,0 +1,30 @@
+{
+  "name": "macos-clone-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "build": "bun run build.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "biome check ."
+  },
+  "dependencies": {
+    "bun-plugin-tailwind": "^0.1.2",
+    "lucide-react": "^1.51.0",
+    "motion": "^14.0.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-rnd": "^10.5.3",
+    "tailwindcss": "^4.1.11",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^7.0.2"
+  }
+}
